@@ -8,4 +8,4 @@
 ## 设置ali_refresh_token系统变量
 
 ### docker pull kaba5643/alipan_check_in
-### docker build -t <username>/<projectname> .
+### docker build -t username/projectname .
