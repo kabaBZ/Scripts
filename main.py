@@ -10,3 +10,4 @@ schedule.every().day.at("14:00").do(CrawlIP.run)
 
 while True:
     schedule.run_pending()
+    time.sleep(1)
