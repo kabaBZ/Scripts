@@ -3,9 +3,10 @@
 """
 
 
-import requests
-import time
 import os
+import time
+
+import requests
 
 XT_Token = os.environ.get("XT_Token")
 if not XT_Token:
