@@ -1,3 +1,6 @@
 [submodule "FreeIP"]
 	path = FreeIP
 	url = https://github.com/kabaBZ/FreeIP.git
+[submodule "Utils"]
+	path = Utils
+	url = https://github.com/kabaBZ/Utils.git

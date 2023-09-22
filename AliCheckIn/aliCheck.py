@@ -1,12 +1,12 @@
 """
 阿里网盘每日签到脚本
 """
-
-
 import os
 import time
 
 import requests
+
+from Utils.AlertUtils import XiaTuiAlert
 
 XT_Token = os.environ.get("XT_Token")
 if not XT_Token:
@@ -15,13 +15,6 @@ if not XT_Token:
 refresh_token = os.environ.get("ali_refresh_token")
 if not refresh_token:
     raise Exception("系统变量中不存在阿里网盘Token!")
-
-
-class XiaTuiAlert(object):
-    def send(title, msg=""):
-        mydata = {"text": title, "desp": msg}
-
-        requests.post(f"http://wx.xtuis.cn/{XT_Token}.send", data=mydata)
 
 
 data = {"grant_type": "refresh_token", "refresh_token": refresh_token}
