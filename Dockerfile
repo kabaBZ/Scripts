@@ -1,4 +1,4 @@
-FROM python
+FROM python:3.9.18-slim-bullseye
 COPY . /home/srv/Scripts
 WORKDIR /home/srv/Scripts
 
