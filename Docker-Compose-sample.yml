@@ -1,0 +1,198 @@
+version: "3"
+services:
+  nextcloud:
+    image: nextcloud
+    container_name: nextcloud
+    volumes:
+      # 挂载配置文件
+      - /opt/aquar/storages/apps/nextcloud:/var/www/html
+      - /opt/aquar/storages/apps/nextcloud/apps:/var/www/html/custom_apps
+      - /opt/aquar/storages/apps/nextcloud/config:/var/www/html/config
+      - /opt/aquar/storages/apps/nextcloud/data:/var/www/html/data
+      - /opt/aquar/storages/aquarpool:/opt/aquarpool
+    ports:
+      - "8081:80"
+    depends_on:
+      - "mariadb"
+    restart: unless-stopped
+  # jellyfin:
+  #   image: ghcr.io/linuxserver/jellyfin
+  #   container_name: jellyfin
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ="Asia/Shanghai"
+  #     # - UMASK_SET=<022> #optional
+  #   volumes:
+  #     - /opt/aquar/storages/apps/jellyfin/config:/config
+  #     - /opt/aquar/storages/apps/jellyfin/data/tvshows:/data/tvshows
+  #     - /opt/aquar/storages/aquarpool/movies:/data/movies
+  #     # - /opt/vc/lib:/opt/vc/lib #optional
+  #   ports:
+  #     - 8096:8096
+  #     - 8920:8920 #optional
+  #     - 7359:7359/udp #optional
+  #     - 1900:1900/udp #optional
+  #   restart: unless-stopped
+  jellyfin:
+    image: nyanmisaka/jellyfin
+    container_name: jellyfin
+    network_mode: host
+    environment:
+      - TZ=Asia/Shanghai
+        # - JELLYFIN_PublishedServerUrl="http://192.168.0.118:8096" #optional
+    volumes:
+      - /opt/aquar/storages/apps/jellyfin/config:/config
+      - /opt/aquar/storages/apps/jellyfin/cache:/cache
+      - /opt/aquar/storages/aquarpool/movies:/media
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/dri:/dev/dri
+  syncthing:
+    image: ghcr.io/linuxserver/syncthing
+    container_name: syncthing
+    # hostname: syncthing #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="Asia/Shanghai"
+    volumes:
+      - /opt/aquar/storages/apps/syncthing/config:/config
+      - /opt/aquar/storages/aquarpool:/opt/aquarpool
+      # - /path/to/data1:/data1
+    ports:
+      - 8384:8384
+      - 22000:22000
+      - 21027:21027/udp
+    restart: unless-stopped
+  photoprism:
+    image: photoprism/photoprism:latest
+    container_name: photoprism
+    depends_on:
+      - "mariadb"
+    # restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    ports:
+      - 8042:2342 # [local port]:[container port]
+    environment:
+      PHOTOPRISM_ADMIN_PASSWORD: "admin"
+      PHOTOPRISM_HTTP_PORT: 2342
+      PHOTOPRISM_HTTP_COMPRESSION: "gzip"
+      PHOTOPRISM_DEBUG: "false"
+      PHOTOPRISM_PUBLIC: "false"
+      PHOTOPRISM_READONLY: "false"
+      PHOTOPRISM_EXPERIMENTAL: "false"
+      PHOTOPRISM_DISABLE_WEBDAV: "false"
+      PHOTOPRISM_DISABLE_SETTINGS: "false"
+      PHOTOPRISM_DISABLE_TENSORFLOW: "false"
+      PHOTOPRISM_DARKTABLE_PRESETS: "false"
+      PHOTOPRISM_DETECT_NSFW: "false"
+      PHOTOPRISM_UPLOAD_NSFW: "true"
+      PHOTOPRISM_DATABASE_DRIVER: "mysql"
+      PHOTOPRISM_DATABASE_SERVER: "mariadb:3306"
+      PHOTOPRISM_DATABASE_NAME: "photoprism"
+      PHOTOPRISM_DATABASE_USER: "root"
+      PHOTOPRISM_DATABASE_PASSWORD: "root"
+      PHOTOPRISM_SITE_URL: "http://39.100.115.231:8142/"
+      PHOTOPRISM_SITE_TITLE: "PhotoPrism"
+      PHOTOPRISM_SITE_CAPTION: "Browse Your Life"
+      PHOTOPRISM_SITE_DESCRIPTION: ""
+      PHOTOPRISM_SITE_AUTHOR: ""
+    volumes:
+      - "/opt/aquar/storages/aquarpool/images:/photoprism/originals"
+      # Multiple folders can be indexed by mounting them as sub-folders of /photoprism/originals:
+      # - "/mnt/Family:/photoprism/originals/Family"    # [folder_1]:/photoprism/originals/[folder_1]
+      # - "/mnt/Friends:/photoprism/originals/Friends"  # [folder_2]:/photoprism/originals/[folder_2]
+      # Mounting an import folder is optional (see docs):
+      # - "~/Import:/photoprism/import"
+      # Permanent storage for settings, index & sidecar files (DON'T REMOVE):
+      - "/opt/aquar/storages/apps/photoprism/storage:/photoprism/storage"
+  mariadb:
+    image: mariadb:10.9.5
+    container_name: mariadb
+    volumes:
+      - /opt/aquar/storages/apps/mariadb:/var/lib/mysql
+      - /opt/aquar/src/docker-compose/mariadb.init.d:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_DATABASE: nextcloud
+      MYSQL_ROOT_PASSWORD: root
+      TZ: "Asia/Shanghai"
+    command:
+      [
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci",
+      "--default-time-zone=+8:00",
+      ]
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+  filerun:
+    image: filerun/filerun
+    container_name: filerun
+    environment:
+      FR_DB_HOST: mariadb
+      FR_DB_PORT: 3306
+      FR_DB_NAME: filerun
+      FR_DB_USER: root
+      FR_DB_PASS: root
+      APACHE_RUN_USER: aquar
+      APACHE_RUN_USER_ID: 1000
+      APACHE_RUN_GROUP: aquar
+      APACHE_RUN_GROUP_ID: 1000
+    depends_on:
+      - mariadb
+    ports:
+      - "8008:80"
+    volumes:
+      - /opt/aquar/storages/apps/filerun/html:/var/www/html
+      - /opt/aquar/storages/aquarpool:/user-files
+  navidrome:
+    image: deluan/navidrome:latest
+    container_name: navidrome
+    user: 0:0 
+    ports:
+      - "4533:4533"
+    restart: unless-stopped
+    environment:
+      # Optional: put your config options customization here. Examples:
+      ND_SCANSCHEDULE: 1h
+      ND_LOGLEVEL: error  
+      ND_SESSIONTIMEOUT: 72h
+      ND_BASEURL: ""
+    volumes:
+      - "/opt/aquar/storages/apps/navidrome/data:/data"
+      - "/opt/aquar/storages/aquarpool/music:/music:ro"
+  aquarhome:
+    image: finetu/aquarhome:latest
+    container_name: aquarhome 
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+    volumes:
+      - /opt/aquar/storages/apps/aquarhome/data:/var/aquardata
+      - /opt/aquar/storages/aquarpool:/opt/aquarpool
+      - /opt/aquar/storages/apps/aquarhome/logs:/root/.pm2/logs
+    ports:
+      - 8172:8172
+    restart: unless-stopped
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="Asia/Shanghai"
+      - WEBUI_PORT=8082
+    volumes:
+      - /opt/aquar/storages/apps/qbittorrent/config:/config
+      - /opt/aquar/storages/aquarpool/qbdownloads:/downloads
+      # - /opt/vc/lib:/opt/vc/lib #optional
+    ports:
+      - 8082:8082
+      - 6881:6881
+      - 6881:6881/udp
+    restart: unless-stopped
