@@ -8,6 +8,6 @@ RUN pip3 install schedule
 RUN pip3 install redis
 RUN pip3 install lxml
 
-CMD python3 main.py
+CMD python3 -u main.py
 
 
