@@ -3,8 +3,10 @@
 """
 import os
 import time
+import datetime
 
 import requests
+from Utils.DBUtils import RedisOpration, RedisProfile
 
 from Utils.AlertUtils import XiaTuiAlert
 
@@ -76,7 +78,10 @@ def parse_result(signin_count, result):
 
 
 def run():
-    access_token2 = get_token()
-    signin_count = check_in(access_token2)
-    result = accept_reward(access_token2, signin_count)
-    parse_result(signin_count, result)
+    if str(datetime.datetime.now().date()) not in RedisOpration(RedisProfile).smembers(
+        "aliCheck"
+    ):
+        access_token2 = get_token()
+        signin_count = check_in(access_token2)
+        result = accept_reward(access_token2, signin_count)
+        parse_result(signin_count, result)
