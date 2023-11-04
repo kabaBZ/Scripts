@@ -78,10 +78,20 @@ def parse_result(signin_count, result):
 
 
 def run():
-    if str(datetime.datetime.now().date()) not in RedisOpration(RedisProfile).smembers(
-        "aliCheck"
+    if not RedisOpration(RedisProfile).sadd(
+        "aliCheck", str(datetime.datetime.now().date())
     ):
+        return
+    try:
         access_token2 = get_token()
         signin_count = check_in(access_token2)
         result = accept_reward(access_token2, signin_count)
+        if not result["success"]:
+            RedisOpration(RedisProfile).srem(
+                "aliCheck", str(datetime.datetime.now().date())
+            )
         parse_result(signin_count, result)
+    except:
+        RedisOpration(RedisProfile).srem(
+            "aliCheck", str(datetime.datetime.now().date())
+        )
